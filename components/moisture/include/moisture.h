@@ -8,6 +8,11 @@
 #include "freertos/task.h"
 #include "driver/adc.h"
 #include "esp_log.h"
+#include <math.h>
+
+// Calibration values (update if sensor behavior changes)
+#define MOISTURE_AIR   852  // ADC value for dry air
+#define MOISTURE_WATER 432  // ADC value for fully submerged
 
 void moisture_init(void);
 

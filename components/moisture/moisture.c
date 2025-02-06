@@ -6,13 +6,19 @@ static void moisture_reading(void *pvParameters) {
     uint16_t adc_data;
     while (1) {
         if (ESP_OK == adc_read(&adc_data)) {
-            ESP_LOGI(TAG, "adc read: %d\r\n", adc_data);
+            // Convert the ADC value to a percentage
+            int moisture_percentage = fabs(MOISTURE_AIR - adc_data) * 100 / (MOISTURE_AIR - MOISTURE_WATER);
+            if (moisture_percentage < 0) {
+                moisture_percentage = 0;  // Clamp to 0% if out of range
+            } else if (moisture_percentage > 100) {
+                moisture_percentage = 100;  // Clamp to 100% if out of range
+            }
+            ESP_LOGI(TAG, "adc read: %d\r\n", moisture_percentage);
             // TODO: Instead of logging only the data, I should publish them in topic 'moisture' of the mqtt
         }
         // We take a measurement each minute
         vTaskDelay(pdMS_TO_TICKS(6000));
     }
-
 }
 
 void moisture_init(void) {

@@ -10,13 +10,13 @@ static TaskHandle_t moisture_task_handle = NULL;
 
 // Moisture reading and publishing task
 static void moisture_reading_task(void *pvParameters) {
-    esp_mqtt_client_handle_t* mqtt_client = (esp_mqtt_client_handle_t *)pvParameters;
+    esp_mqtt_client_handle_t mqtt_client = *(esp_mqtt_client_handle_t *)pvParameters;
     int msg_id;
     uint16_t adc_data;
     char buffer[16];          // Buffer to hold the resulting string
     while (1) {
         // Check that mqtt_client is valid
-        if (*mqtt_client == NULL) {
+        if (mqtt_client == NULL) {
             ESP_LOGE(TAG, "MQTT client handle is NULL; cannot publish.");
             vTaskDelay(pdMS_TO_TICKS(1000)); // Delay before retry
             continue;
@@ -30,13 +30,13 @@ static void moisture_reading_task(void *pvParameters) {
                 moisture_percentage = 100;  // Clamp to 100% if out of range
             }
             // Put the read value into a char[] buffer
-            snprintf(buffer, sizeof(buffer), "%d", moisture_percentage); // Convert int to string
+            itoa(moisture_percentage, buffer, 10);
             // Publish the moisture value to MQTT Broker
-            msg_id = esp_mqtt_client_publish(*mqtt_client, "/moisture", buffer, 0, 1, 0);
+            msg_id = esp_mqtt_client_publish(mqtt_client, "/moisture", buffer, 0, 1, 0);
             ESP_LOGI(TAG, "Published moisture=%d, msg_id=%d\r\n", moisture_percentage, msg_id);
         }
-        // We take a measurement each minute
-        vTaskDelay(pdMS_TO_TICKS(6000));
+        // We take a measurement each <To Be decided>
+        vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
 

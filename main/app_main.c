@@ -32,6 +32,8 @@
 
 // Inclusion of project custom components
 #include "moisture.h"
+#include "temperature-humidity.h"
+#include "events.h"
 
 
 static const char *TAG = "MQTT_EXAMPLE";
@@ -44,14 +46,14 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
     switch (event->event_id) {
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-            // Post MOISTURE_SENSOR_EVENT_START to the event loop
-            // Pass mqtt_client as event data to MOISTURE_SENSOR_EVENT_START
-            esp_event_post(MOISTURE_EVENTS, MOISTURE_SENSOR_EVENT_START, (void *) &client, sizeof(client), portMAX_DELAY);
+            // Post SENSOR_EVENT_START to the event loop
+            // Pass mqtt_client as event data to SENSOR_EVENT_START
+            esp_event_post(SENSOR_EVENTS, SENSOR_EVENT_START, (void *) &client, sizeof(client), portMAX_DELAY);
             break;
         case MQTT_EVENT_DISCONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
-            // Post MOISTURE_SENSOR_EVENT_STOP to the event loop
-            esp_event_post(MOISTURE_EVENTS, MOISTURE_SENSOR_EVENT_STOP, NULL, 0, portMAX_DELAY);
+            // Post SENSOR_EVENT_STOP to the event loop
+            esp_event_post(SENSOR_EVENTS, SENSOR_EVENT_STOP, NULL, 0, portMAX_DELAY);
             break;
         case MQTT_EVENT_PUBLISHED:
             ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
@@ -137,4 +139,5 @@ void app_main(void)
 
     mqtt_app_start();
     moisture_init();
+    reading_init();
 }

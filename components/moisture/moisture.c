@@ -2,14 +2,11 @@
 
 static const char *TAG = "Moisture sensor";
 
-// Define MOISTURE_EVENTS here
-ESP_EVENT_DEFINE_BASE(MOISTURE_EVENTS);
-
 // Task handle for the moisture reading loop
 static TaskHandle_t moisture_task_handle = NULL;
 
 // Moisture reading and publishing task
-static void moisture_reading_task(void *pvParameters) {
+static void sensor_reading_task(void *pvParameters) {
     esp_mqtt_client_handle_t mqtt_client = *(esp_mqtt_client_handle_t *)pvParameters;
     int msg_id;
     uint16_t adc_data;
@@ -41,22 +38,22 @@ static void moisture_reading_task(void *pvParameters) {
 }
 
 // Event loop handler
-static void moisture_event_handler(void *handler_arg, esp_event_base_t base, int32_t id, void *event_data) {
-    if (base == MOISTURE_EVENTS) {
+static void sensor_event_handler(void *handler_arg, esp_event_base_t base, int32_t id, void *event_data) {
+    if (base == SENSOR_EVENTS) {
         switch (id) {
-            case MOISTURE_SENSOR_EVENT_START:
-                ESP_LOGI(TAG, "MOISTURE_SENSOR_EVENT_START received");
+            case SENSOR_EVENT_START:
+                ESP_LOGI(TAG, "SENSOR_EVENT_START received");
 
                 // Start or resume the moisture reading task
                 if (moisture_task_handle == NULL) {
-                    xTaskCreate(moisture_reading_task, "moisture_task", 4096, event_data, 5, &moisture_task_handle);
+                    xTaskCreate(sensor_reading_task, "moisture_task", 4096, event_data, 5, &moisture_task_handle);
                 } else {
                     vTaskResume(moisture_task_handle);
                 }
                 break;
 
-            case MOISTURE_SENSOR_EVENT_STOP:
-                ESP_LOGI(TAG, "MOISTURE_SENSOR_EVENT_STOP received");
+            case SENSOR_EVENT_STOP:
+                ESP_LOGI(TAG, "SENSOR_EVENT_STOP received");
 
                 // Suspend the moisture reading task
                 if (moisture_task_handle != NULL) {
@@ -81,5 +78,5 @@ void moisture_init(void) {
     ESP_ERROR_CHECK(adc_init(&adc_config));
 
     // Register moisture event handler
-    ESP_ERROR_CHECK(esp_event_handler_register(MOISTURE_EVENTS, ESP_EVENT_ANY_ID, moisture_event_handler, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENTS, ESP_EVENT_ANY_ID, sensor_event_handler, NULL));
 }

@@ -4,6 +4,9 @@
         "stdlib.h": "c",
         "chrono": "c",
         "mqtt_client.h": "c",
-        "random": "c"
+        "random": "c",
+        "math.h": "c",
+        "freertos.h": "c",
+        "dht.h": "c"
     }
 }

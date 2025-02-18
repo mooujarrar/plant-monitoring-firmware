@@ -11,18 +11,12 @@
 #include "esp_event.h"
 #include "mqtt_client.h"
 #include <math.h>
+#include "events.h"
 
 // Calibration values (update if sensor behavior changes)
 #define MOISTURE_AIR   852  // ADC value for dry air
 #define MOISTURE_WATER 432  // ADC value for fully submerged
 
-// Declare MOISTURE_EVENTS as external
-ESP_EVENT_DECLARE_BASE(MOISTURE_EVENTS);
-
-typedef enum {
-    MOISTURE_SENSOR_EVENT_START,  // Triggered to start moisture reading task
-    MOISTURE_SENSOR_EVENT_STOP,   // Triggered to stop moisture reading task
-} moisture_event_t;
 
 // Define API
 void moisture_init(void);

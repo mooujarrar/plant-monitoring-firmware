@@ -31,9 +31,10 @@ static void sensor_reading_task(void *pvParameters) {
             // Publish the moisture value to MQTT Broker
             msg_id = esp_mqtt_client_publish(mqtt_client, "/moisture", buffer, 0, 1, 0);
             ESP_LOGI(TAG, "Published moisture=%d, msg_id=%d\r\n", moisture_percentage, msg_id);
+            // We take a measurement each <To Be decided>
+            vTaskDelay(pdMS_TO_TICKS(10000));
         }
-        // We take a measurement each <To Be decided>
-        vTaskDelay(pdMS_TO_TICKS(10000));
+
     }
 }
 

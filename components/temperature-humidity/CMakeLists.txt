@@ -1,6 +1,5 @@
 set(srcs
     "src/DHT_c.c"
-    "src/DHT.cpp"
     "temperature-humidity.c")
 
 set(includes "include")

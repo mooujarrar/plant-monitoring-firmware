@@ -30,8 +30,15 @@
 static const char *TAG = "DHT";
 
 int DHTgpio = GPIO_NUM_4; // my default DHT pin = 4
-float humidity = 0.;
-float temperature = 0.;
+
+temperature_t temperature = {
+    .temperature_whole = 0,
+    .temperature_decimal = 0
+};
+humidity_t humidity = {
+    .humidity_whole = 0,
+    .humidity_decimal = 0
+};
 
 // == set the DHT used pin=========================================
 
@@ -42,8 +49,8 @@ void setDHTgpio(int gpio)
 
 // == get temp & hum =============================================
 
-float getHumidity() { return humidity; }
-float getTemperature() { return temperature; }
+humidity_t getHumidity() { return humidity; }
+temperature_t getTemperature() { return temperature; }
 
 // == error handler ===============================================
 
@@ -151,17 +158,20 @@ int readDHT()
 
     gpio_set_direction(DHTgpio, GPIO_MODE_OUTPUT);
 
-    // pull down for 3 ms for a smooth and nice wake up
+    taskENTER_CRITICAL();
+
+    // pull down for 3 ms (documentation recommends at least 1ms) for a smooth and nice wake up
     gpio_set_level(DHTgpio, 0);
     ets_delay_us(3000);
 
-    // pull up for 25 us for a gentile asking for data
+    // pull up for 30 us (documentation recommends between 20 and 40 us) for a gentile asking for data
     gpio_set_level(DHTgpio, 1);
-    ets_delay_us(25);
+    ets_delay_us(30);
 
     gpio_set_direction(DHTgpio, GPIO_MODE_INPUT); // change to input mode
 
     // == DHT will keep the line low for 80 us and then high for 80us ====
+    // -- 80us low -----------------------
 
     uSec = getSignalLevel(85, 0);
     // ESP_LOGI(TAG, "Response = %d", uSec);
@@ -182,7 +192,7 @@ int readDHT()
 
         // -- starts new data transmission with >50us low signal
 
-        uSec = getSignalLevel(56, 0);
+        uSec = getSignalLevel(55, 0);
         if (uSec < 0)
             return DHT_TIMEOUT_ERROR;
 
@@ -196,7 +206,7 @@ int readDHT()
         // since all dhtData array where set to 0 at the start,
         // only look for "1" (>28us us)
 
-        if (uSec > 40)
+        if (uSec > 30)
         {
             dhtData[byteInx] |= (1 << bitInx);
         }
@@ -212,22 +222,31 @@ int readDHT()
             bitInx--;
     }
 
+    // Exit critical section
+    taskEXIT_CRITICAL();
+
     // == get humidity from Data[0] and Data[1] ==========================
 
-    humidity = dhtData[0];
-    humidity *= 0x100; // >> 8
-    humidity += dhtData[1];
-    humidity /= 10; // get the decimal
+    uint16_t humidity_value = (dhtData[0] << 8) | dhtData[1];
+    float tempVal = humidity_value / (float)10; 
+    int whole = (int)tempVal;      // Get the whole part
+    int decimal = (int)((tempVal - whole) * 10);  // Get the decimal part (1 decimal place)
+
+    humidity.humidity_whole = whole;
+    humidity.humidity_decimal = decimal;
 
     // == get temp from Data[2] and Data[3]
+    uint16_t temp_value = ((dhtData[2] & 0x7F) << 8) | dhtData[3];
+    tempVal = temp_value / (float)10;
+    whole = (int)tempVal;      // Get the whole part
+    decimal = (int)((tempVal - whole) * 10);  // Get the decimal part (1 decimal place)
 
-    temperature = dhtData[2] & 0x7F;
-    temperature *= 0x100; // >> 8
-    temperature += dhtData[3];
-    temperature /= 10;
+    temperature.temperature_whole = whole;
+    temperature.temperature_decimal = decimal;
+
 
     if (dhtData[2] & 0x80) // negative temp, brrr it's freezing
-        temperature *= -1;
+        temperature.temperature_whole *= -1;
 
     // == verify if checksum is ok ===========================================
     // Checksum is the sum of Data 8 bits masked out 0xFF

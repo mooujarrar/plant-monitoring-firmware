@@ -21,7 +21,10 @@ static void sensor_reading_task(void *pvParameters) {
 
         errorHandler(ret);
 
-        ESP_LOGI(TAG, "Hum: %.1f Tmp: %.1f\n", getHumidity(), getTemperature());
+        humidity_t humidity = getHumidity();
+        temperature_t temperature = getTemperature();
+
+        ESP_LOGI(TAG, "Hum: %d.%d Tmp: %d.%d \n", humidity.humidity_whole, humidity.humidity_decimal, temperature.temperature_whole, temperature.temperature_decimal);
 
         // -- wait at least 10 sec before reading again ------------
         // The interval of whole process must be beyond 2 seconds !!
@@ -59,29 +62,9 @@ static void sensor_event_handler(void *handler_arg, esp_event_base_t base, int32
     }
 }
 
-void reading_init(void) {
-     // Initialize NVS
-     /*esp_err_t ret = nvs_flash_init();
-     if (ret == ESP_ERR_NVS_NO_FREE_PAGES)
-     {
-         ESP_ERROR_CHECK(nvs_flash_erase());
-         ret = nvs_flash_init();
-     }
-     ESP_ERROR_CHECK(ret);*/
- 
-     esp_log_level_set("*", ESP_LOG_INFO);
- 
-     
-     // Initiate a configuration for the reading pin
-    // Step 1: Configure GPIO4 as an output
-    gpio_config_t io_conf = {
-        .pin_bit_mask = GPIO_NUM_4,               // Select GPIO4
-        .mode = GPIO_MODE_OUTPUT,                 // Set pin as output
-        .pull_up_en = GPIO_PULLUP_DISABLE,        // No pull-up resistor
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,    // No pull-down resistor
-        .intr_type = GPIO_INTR_DISABLE            // No interrupt
-    };
-    gpio_config(&io_conf);  // Apply configuration
+void reading_init(void) {     
+    // Initiate a configuration for the reading pin
+    gpio_pad_select_gpio(GPIO_NUM_4);
 
     // Register sensor event handler
     ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENTS, ESP_EVENT_ANY_ID, sensor_event_handler, NULL));

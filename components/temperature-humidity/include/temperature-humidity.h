@@ -15,6 +15,8 @@
 #include "freertos/event_groups.h"
 #include "driver/gpio.h"
 #include "nvs_flash.h"
+#include "rom/gpio.h"
+
 
 #include "DHT.h"
 

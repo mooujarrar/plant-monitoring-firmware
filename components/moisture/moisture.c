@@ -29,7 +29,9 @@ static void sensor_reading_task(void *pvParameters) {
             // Put the read value into a char[] buffer
             itoa(moisture_percentage, buffer, 10);
             // Publish the moisture value to MQTT Broker
-            msg_id = esp_mqtt_client_publish(mqtt_client, "/moisture", buffer, 0, 1, 0);
+            char moisture_topic[100];
+            sprintf(moisture_topic, "/%s/%s", CONFIG_PLANT_TOKEN, CONFIG_PLANT_TOKEN_MOISTURE);
+            msg_id = esp_mqtt_client_publish(mqtt_client, moisture_topic, buffer, 0, 1, 0);
             ESP_LOGI(TAG, "Published moisture=%d, msg_id=%d\r\n", moisture_percentage, msg_id);
             // We take a measurement each <To Be decided>
             vTaskDelay(pdMS_TO_TICKS(10000));

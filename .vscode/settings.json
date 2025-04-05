@@ -15,6 +15,7 @@
         "sdkconfig.h": "c",
         "stdbool.h": "c",
         "stdint.h": "c",
-        "esp_idf_version.h": "c"
+        "esp_idf_version.h": "c",
+        "functional": "c"
     }
 }

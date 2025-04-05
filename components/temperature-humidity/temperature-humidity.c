@@ -34,8 +34,14 @@ static void sensor_reading_task(void *pvParameters) {
         snprintf(temp_buffer, sizeof(temp_buffer), "%d.%d", temperature.temperature_whole, temperature.temperature_decimal);
 
         // Publish the moisture value to MQTT Broker
-        msg_id = esp_mqtt_client_publish(mqtt_client, "/humidity", humidity_buffer, 0, 1, 0);
-        msg_id = esp_mqtt_client_publish(mqtt_client, "/temperature", temp_buffer, 0, 1, 0);
+        char humidity_topic[100];
+        sprintf(humidity_topic, "/%s/%s", CONFIG_PLANT_TOKEN, CONFIG_PLANT_TOKEN_HUMIDITY);
+
+        char temperature_topic[100];
+        sprintf(temperature_topic, "/%s/%s", CONFIG_PLANT_TOKEN, CONFIG_PLANT_TOKEN_TEMPERATURE);
+
+        msg_id = esp_mqtt_client_publish(mqtt_client, humidity_topic, humidity_buffer, 0, 1, 0);
+        msg_id = esp_mqtt_client_publish(mqtt_client, temperature_topic, temp_buffer, 0, 1, 0);
 
         ESP_LOGI(TAG, "Published Humidity=%d.%d, Temperature=%d.%d, msg_id=%d\r\n", humidity.humidity_whole, humidity.humidity_decimal, temperature.temperature_whole, temperature.temperature_decimal, msg_id);
 

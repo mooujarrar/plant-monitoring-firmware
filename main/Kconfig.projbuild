@@ -11,3 +11,31 @@ menu "MQTT Broker Configuration"
         default y if BROKER_URL = "FROM_STDIN"
 
 endmenu
+
+menu "Plant Monitoring"
+
+    config PLANT_TOKEN
+        string "Plant Token"
+        default "b914849c8a584aedbf53a37ae55e0297"
+        help
+            General-purpose token for identifying a plant.
+
+    config PLANT_TOKEN_HUMIDITY
+        string "Humidity Token"
+        default "5417d197a3bc44d8b80d3cd9cfe855af"
+        help
+            Token used to identify humidity sensor data.
+
+    config PLANT_TOKEN_MOISTURE
+        string "Moisture Token"
+        default "f71f9a5e7149458ba2e3c5fbe1aca7e2"
+        help
+            Token used to identify soil moisture sensor data.
+
+    config PLANT_TOKEN_TEMPERATURE
+        string "Temperature Token"
+        default "0048cb48d42d4950a7ecda3c41109f93"
+        help
+            Token used to identify temperature sensor data.
+
+endmenu

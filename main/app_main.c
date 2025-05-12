@@ -141,7 +141,7 @@ static void sensor_ack_event_handler(void *handler_arg, esp_event_base_t base, i
             vTaskDelay(pdMS_TO_TICKS(100));
 
             ESP_LOGI(TAG, "Entering deep sleep...");
-            esp_deep_sleep(60 * 60 * 1000000); // 60 minutes
+            esp_deep_sleep(30 * 60 * 1000000); // 30 minutes
         }
     }
 }

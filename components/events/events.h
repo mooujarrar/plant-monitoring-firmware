@@ -10,6 +10,7 @@ ESP_EVENT_DECLARE_BASE(SENSOR_EVENTS);
 typedef enum {
     SENSOR_EVENT_START,  // Triggered to start moisture reading task
     SENSOR_EVENT_STOP,   // Triggered to stop moisture reading task
+    SENSOR_EVENT_ACK, // Used for acknowledgment
 } reading_rvent_t;
 
 #endif // EVENTS_H

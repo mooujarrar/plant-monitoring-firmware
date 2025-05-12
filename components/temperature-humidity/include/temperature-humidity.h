@@ -20,6 +20,8 @@
 
 #include "DHT.h"
 
+#define SENSOR_ACK_BIT_2 (1 << 1) // Sensor 2 acknowledgment
+
 // Define API
 void reading_init(void);
 

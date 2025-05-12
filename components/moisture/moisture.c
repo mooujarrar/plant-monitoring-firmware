@@ -40,28 +40,51 @@ static void sensor_reading_task(void *pvParameters) {
     }
 }
 
+static void sensor_read_and_publish(esp_mqtt_client_handle_t *mqtt_client) {
+    uint16_t adc_data;
+    char buffer[16];
+    int msg_id;
+
+    // Check that mqtt_client is valid
+    if (mqtt_client == NULL) {
+        ESP_LOGE(TAG, "MQTT client handle is NULL; cannot publish.");
+        return;
+    }
+
+    if (ESP_OK == adc_read(&adc_data)) {
+        // Convert the ADC value to a percentage
+        int moisture_percentage = fabs(MOISTURE_AIR - adc_data) * 100 / (MOISTURE_AIR - MOISTURE_WATER);
+        moisture_percentage = moisture_percentage < 0 ? 0 : (moisture_percentage > 100 ? 100 : moisture_percentage);
+
+        // Put the read value into a char[] buffer
+        itoa(moisture_percentage, buffer, 10);
+
+        // Publish the moisture value to MQTT Broker
+        char moisture_topic[100];
+        sprintf(moisture_topic, "/%s/%s", CONFIG_PLANT_TOKEN, CONFIG_PLANT_TOKEN_MOISTURE);
+        msg_id = esp_mqtt_client_publish(*mqtt_client, moisture_topic, buffer, 0, 1, 0);
+        ESP_LOGI(TAG, "Published moisture=%d, msg_id=%d\r\n", moisture_percentage, msg_id);
+    }
+}
+
 // Event loop handler
 static void sensor_event_handler(void *handler_arg, esp_event_base_t base, int32_t id, void *event_data) {
     if (base == SENSOR_EVENTS) {
         switch (id) {
             case SENSOR_EVENT_START:
-                ESP_LOGI(TAG, "SENSOR_EVENT_START received");
+                ESP_LOGI(TAG, "SENSOR_EVENT_START received in Moisture Sensor");
 
-                // Start or resume the moisture reading task
-                if (moisture_task_handle == NULL) {
-                    xTaskCreate(sensor_reading_task, "moisture_task", 4096, event_data, 5, &moisture_task_handle);
-                } else {
-                    vTaskResume(moisture_task_handle);
-                }
+                // Simulate data publishing
+                ESP_LOGI(TAG, "Moisture Sensor is publishing data...");
+                sensor_read_and_publish((esp_mqtt_client_handle_t *)event_data);
+
+                // Post acknowledgment
+                uint32_t ack_bit = SENSOR_ACK_BIT_1;
+                esp_event_post(SENSOR_EVENTS, SENSOR_EVENT_ACK, &ack_bit, sizeof(ack_bit), portMAX_DELAY);
                 break;
 
             case SENSOR_EVENT_STOP:
                 ESP_LOGI(TAG, "SENSOR_EVENT_STOP received");
-
-                // Suspend the moisture reading task
-                if (moisture_task_handle != NULL) {
-                    vTaskSuspend(moisture_task_handle);
-                }
                 break;
 
             default:

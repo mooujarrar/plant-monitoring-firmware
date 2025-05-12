@@ -16,6 +16,9 @@
         "stdbool.h": "c",
         "stdint.h": "c",
         "esp_idf_version.h": "c",
-        "functional": "c"
+        "functional": "c",
+        "esp_netif.h": "c",
+        "protocol_examples_common.h": "c",
+        "esp_sleep.h": "c"
     }
 }

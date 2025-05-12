@@ -16,6 +16,7 @@
 #include "nvs_flash.h"
 #include "esp_event.h"
 #include "esp_netif.h"
+#include "esp_sleep.h"
 #include "protocol_examples_common.h"
 
 #include "freertos/FreeRTOS.h"
@@ -36,8 +37,12 @@
 #include "events.h"
 
 
-static const char *TAG = "MQTT_EXAMPLE";
+static const char *TAG = "MAIN";
+static esp_mqtt_client_handle_t client = NULL;
 
+#define SENSOR_ACK_MASK  (SENSOR_ACK_BIT_1 | SENSOR_ACK_BIT_2) // All sensors
+
+static uint32_t ack_state = 0; // Bitmask to track acknowledgments
 
 static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 {
@@ -108,9 +113,37 @@ static void mqtt_app_start(void)
     }
 #endif /* CONFIG_BROKER_URL_FROM_STDIN */
 
-    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+    client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
     esp_mqtt_client_start(client);
+}
+
+static void sensor_ack_event_handler(void *handler_arg, esp_event_base_t base, int32_t id, void *event_data) {
+    if (base == SENSOR_EVENTS && id == SENSOR_EVENT_ACK) {
+        uint32_t *ack_bit = (uint32_t *)event_data;
+        ack_state |= *ack_bit; // Set the corresponding bit
+        ESP_LOGI(TAG, "Acknowledgment received: 0x%X, Current state: 0x%X", *ack_bit, ack_state);
+
+        // Check if all sensors have acknowledged
+        if ((ack_state & SENSOR_ACK_MASK) == SENSOR_ACK_MASK) {
+            ESP_LOGI(TAG, "All sensors acknowledged. Preparing for deep sleep...");
+
+            // Stop ongoing tasks
+            ESP_LOGI(TAG, "Stopping MQTT client...");
+            esp_mqtt_client_stop(client); // Ensure mqtt_client is accessible globally
+
+            ESP_LOGI(TAG, "Disconnecting Wi-Fi...");
+            example_disconnect(); // Stops Wi-Fi, use `example_connect` functions
+
+            ESP_LOGI(TAG, "Disabling ADC readings...");
+            adc_deinit(); // Ensure you have an `adc_deinit()` implementation
+
+            vTaskDelay(pdMS_TO_TICKS(100));
+
+            ESP_LOGI(TAG, "Entering deep sleep...");
+            esp_deep_sleep(60 * 60 * 1000000); // 60 minutes
+        }
+    }
 }
 
 void app_main(void)
@@ -137,6 +170,9 @@ void app_main(void)
     
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+    // Register the acknowledgment event handler
+    ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENTS, SENSOR_EVENT_ACK, sensor_ack_event_handler, NULL));
 
     /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
      * Read "Establishing Wi-Fi or Ethernet Connection" section in

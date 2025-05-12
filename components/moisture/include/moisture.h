@@ -17,6 +17,7 @@
 #define MOISTURE_AIR   852  // ADC value for dry air
 #define MOISTURE_WATER 432  // ADC value for fully submerged
 
+#define SENSOR_ACK_BIT_1 (1 << 0) // Sensor 1 acknowledgment
 
 // Define API
 void moisture_init(void);

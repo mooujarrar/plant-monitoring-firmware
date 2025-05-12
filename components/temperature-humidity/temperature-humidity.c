@@ -51,28 +51,67 @@ static void sensor_reading_task(void *pvParameters) {
     }
 }
 
+static void sensor_read_and_publish(esp_mqtt_client_handle_t *mqtt_client) {
+    char humidity_buffer[16];  // Buffer to hold the resulting string
+    char temp_buffer[16];      // Buffer to hold the resulting string
+
+    // Set the DHT sensor GPIO pin
+    setDHTgpio(GPIO_NUM_4);
+
+    // Check that mqtt_client is valid
+    if (mqtt_client == NULL) {
+        ESP_LOGE(TAG, "MQTT client handle is NULL; cannot publish.");
+        return;
+    }
+
+    // Read data from the DHT sensor
+    int ret = readDHT();
+
+    // Handle any error while reading the DHT sensor
+    errorHandler(ret);
+
+    // Get humidity and temperature values
+    humidity_t humidity = getHumidity();
+    temperature_t temperature = getTemperature();
+
+    // Convert humidity and temperature values to strings
+    snprintf(humidity_buffer, sizeof(humidity_buffer), "%d.%d", humidity.humidity_whole, humidity.humidity_decimal);
+    snprintf(temp_buffer, sizeof(temp_buffer), "%d.%d", temperature.temperature_whole, temperature.temperature_decimal);
+
+    // Publish the humidity value to the MQTT Broker
+    char humidity_topic[100];
+    sprintf(humidity_topic, "/%s/%s", CONFIG_PLANT_TOKEN, CONFIG_PLANT_TOKEN_HUMIDITY);
+    int msg_id = esp_mqtt_client_publish(*mqtt_client, humidity_topic, humidity_buffer, 0, 1, 0);
+
+    // Publish the temperature value to the MQTT Broker
+    char temperature_topic[100];
+    sprintf(temperature_topic, "/%s/%s", CONFIG_PLANT_TOKEN, CONFIG_PLANT_TOKEN_TEMPERATURE);
+    msg_id = esp_mqtt_client_publish(*mqtt_client, temperature_topic, temp_buffer, 0, 1, 0);
+
+    ESP_LOGI(TAG, "Published Humidity=%d.%d, Temperature=%d.%d, msg_id=%d", 
+        humidity.humidity_whole, humidity.humidity_decimal, 
+        temperature.temperature_whole, temperature.temperature_decimal, 
+        msg_id);
+}
+
 // Event loop handler
 static void sensor_event_handler(void *handler_arg, esp_event_base_t base, int32_t id, void *event_data) {
     if (base == SENSOR_EVENTS) {
         switch (id) {
             case SENSOR_EVENT_START:
-                ESP_LOGI(TAG, "SENSOR_EVENT_START received");
+                ESP_LOGI(TAG, "SENSOR_EVENT_START received in DHT22");
 
-                // Start or resume the sensor reading task
-                if (reading_task_handle == NULL) {
-                    xTaskCreate(sensor_reading_task, "sensor_reading_task", 4096, event_data, 5, &reading_task_handle);
-                } else {
-                    vTaskResume(reading_task_handle);
-                }
+                // Simulate data publishing
+                ESP_LOGI(TAG, "DHT22 is publishing data...");
+                sensor_read_and_publish((esp_mqtt_client_handle_t *)event_data);
+
+                // Post acknowledgment
+                uint32_t ack_bit = SENSOR_ACK_BIT_2;
+                esp_event_post(SENSOR_EVENTS, SENSOR_EVENT_ACK, &ack_bit, sizeof(ack_bit), portMAX_DELAY);
                 break;
 
             case SENSOR_EVENT_STOP:
                 ESP_LOGI(TAG, "SENSOR_EVENT_STOP received");
-
-                // Suspend the reading task
-                if (reading_task_handle != NULL) {
-                    vTaskSuspend(reading_task_handle);
-                }
                 break;
 
             default:
